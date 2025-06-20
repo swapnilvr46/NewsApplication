@@ -6,11 +6,11 @@ public class NewsApplication {
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
         AdminService adminService = new AdminService();
-        NewsService newsService = new NewsService();
+        NewsArticleService newsArticleService = new NewsArticleService();
 
         List<User> users = new ArrayList<>();
         List<NewsArticle> articles = new ArrayList<>();
-        newsService.newArticles = articles;
+        newsArticleService.newArticles = articles;
 
         System.out.println("Welcome to News Aggregator!");
 
@@ -93,7 +93,7 @@ public class NewsApplication {
                         } else if (userOption == 2) {
                             System.out.print("Enter category: ");
                             String cat = scanner.nextLine();
-                            List<NewsArticle> catNews = newsService.getNewsByCategory(cat);
+                            List<NewsArticle> catNews = newsArticleService.getNewsByCategory(cat);
                             System.out.println("Found " + catNews.size() + " articles.");
                         }
                     }

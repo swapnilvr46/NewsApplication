@@ -1,4 +1,4 @@
-package com.NewsAggregation.NewsApp.Service;
-
-public class NewsCategoryService {
-}
+//package com.NewsAggregation.NewsApp.service;
+//
+//public class NewsCategoryService {
+//}

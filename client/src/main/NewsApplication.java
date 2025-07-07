@@ -1,14 +1,15 @@
 package main;
 import model.*;
 import services.*;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.*;
 public class NewsApplication {
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
         AdminService adminService = new AdminService();
         NewsArticleService newsArticleService = new NewsArticleService();
-
-        List<User> users = new ArrayList<>();
         List<NewsArticle> articles = new ArrayList<>();
         newsArticleService.newArticles = articles;
 
@@ -27,81 +28,70 @@ public class NewsApplication {
                 String email = scanner.nextLine();
                 System.out.print("Enter password: ");
                 String password = scanner.nextLine();
-
-                User user = new User();
-                user.id = UUID.randomUUID().toString();
-                user.userName = username;
-                user.email = email;
-                user.password = password;
-                user.isAdmin = false;
-                users.add(user);
-
-                System.out.println("Registration successful.");
+                System.out.print("Enter role (USER or ADMIN): ");
+                String role = scanner.nextLine().toUpperCase();
+                try {
+                    String signupPayload = String.format("{\"username\":\"%s\", \"email\":\"%s\", \"password\":\"%s\", \"role\":\"%s\"}",
+                            username, email, password, role);
+                    URL url = new URL("http://localhost:8080/api/auth/signup");
+                    HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
+                    httpURLConnection.setRequestMethod("POST");
+                    httpURLConnection.setRequestProperty("Content-Type", "application/json");
+                    httpURLConnection.setDoOutput(true);
+                    try (OutputStream outputStream = httpURLConnection.getOutputStream()) {
+                        outputStream.write(signupPayload.getBytes());
+                    }
+                    int responseCode = httpURLConnection.getResponseCode();
+                    System.out.println("Response Code: " + responseCode);
+                    Scanner responseScanner ;
+                    if (responseCode >= 200 && responseCode < 300) {
+                        responseScanner = new Scanner(httpURLConnection.getInputStream());
+                    } else {
+                        responseScanner = new Scanner(httpURLConnection.getErrorStream());
+                    }
+                    while (responseScanner.hasNextLine()) {
+                        System.out.println(responseScanner.nextLine());
+                    }
+                    httpURLConnection.disconnect();
+                } catch (Exception e) {
+                    System.err.println("Error during signup: " + e.getMessage());
+                }
 
             } else if (choice == 2) {
                 System.out.print("Enter email: ");
                 String email = scanner.nextLine();
                 System.out.print("Enter password: ");
                 String password = scanner.nextLine();
+                System.out.print("Enter Basic Auth username: ");
+                String authUsername = scanner.nextLine();
+                System.out.print("Enter Basic Auth password: ");
+                String authPassword = scanner.nextLine();
 
-                User loggedInUser = null;
-                for (User user : users) {
-                    if (user.email.equals(email) && user.password.equals(password)) {
-                        loggedInUser = user;
-                        break;
+                try {
+                    String loginPayload = String.format("{\"email\":\"%s\", \"password\":\"%s\"}"
+                            ,email, password);
+                    URL url = new URL("http://localhost:8080/api/auth/login");
+                    HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
+                    httpURLConnection.setRequestMethod("POST");
+                    httpURLConnection.setRequestProperty("Content-Type", "application/json");
+                    String basicAuth = Base64.getEncoder().encodeToString((authUsername + ":" + authPassword).getBytes());
+                    httpURLConnection.setRequestProperty("Authorization", "Basic " + basicAuth);
+                    httpURLConnection.setDoOutput(true);
+                    try (OutputStream outputStream = httpURLConnection.getOutputStream()) {
+                        outputStream.write(loginPayload.getBytes());
                     }
-                }
+                    int responseCode = httpURLConnection.getResponseCode();
+                    System.out.println("Response Code: " + responseCode);
 
-                if (loggedInUser != null) {
-                    System.out.println("Login successful. Welcome " + loggedInUser.userName + "!");
-
-                    if (loggedInUser.isAdmin) {
-                        System.out.println("\nAdmin Panel:");
-                        System.out.println("1. Add Category\n2. View News Provider Status\n3. Logout");
-                        int adminOption = scanner.nextInt();
-                        scanner.nextLine();
-
-                        if (adminOption == 1) {
-                            System.out.print("Enter category to add: ");
-                            String category = scanner.nextLine();
-                            NotificationConfig config = new NotificationConfig();
-                            config.userId = loggedInUser.id;
-                            config.addCategory(category);
-                            loggedInUser.notificationConfigs.add(config);
-                            System.out.println("Category added.");
-                        } else if (adminOption == 2) {
-                            NewsSource newsSource = new NewsSource();
-                            newsSource.name = "NewsAPI";
-                            newsSource.status = "Active";
-                            adminService.viewNewsProviderStatus(newsSource);
-                        }
-
-                    } else {
-                        System.out.println("\nUser Panel:");
-                        System.out.println("1. Add Keyword\n2. View News by Category\n3. Logout");
-                        int userOption = scanner.nextInt();
-                        scanner.nextLine();
-
-                        if (userOption == 1) {
-                            System.out.print("Enter keyword: ");
-                            String keyword = scanner.nextLine();
-                            NotificationConfig cfg = new NotificationConfig();
-                            cfg.userId = loggedInUser.id;
-                            cfg.addKeyword(keyword);
-                            loggedInUser.notificationConfigs.add(cfg);
-                            System.out.println("Keyword added.");
-                        } else if (userOption == 2) {
-                            System.out.print("Enter category: ");
-                            String cat = scanner.nextLine();
-                            List<NewsArticle> catNews = newsArticleService.getNewsByCategory(cat);
-                            System.out.println("Found " + catNews.size() + " articles.");
-                        }
+                    Scanner responseScanner = new Scanner(httpURLConnection.getInputStream());
+                    while (responseScanner.hasNextLine()) {
+                        System.out.println(responseScanner.nextLine());
                     }
+                    httpURLConnection.disconnect();
 
-                } else {
-                    System.out.println("Invalid login.");
+                } catch (Exception e) {
+                    System.err.println("Error during login: " + e.getMessage());
                 }
-
             } else if (choice == 3) {
                 System.out.println("Thank you for using News Aggregator. Goodbye!");
                 break;
@@ -109,7 +99,6 @@ public class NewsApplication {
                 System.out.println("Invalid choice. Try again.");
             }
         }
-
         scanner.close();
     }
 }

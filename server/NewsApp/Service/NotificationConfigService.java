@@ -1,4 +1,4 @@
-package com.NewsAggregation.NewsApp.Service;
-
-public class NotificationConfigService {
-}
+//package com.NewsAggregation.NewsApp.service;
+//
+//public class NotificationConfigService {
+//}

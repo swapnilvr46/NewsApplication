@@ -31,8 +31,7 @@ public class NewsApplication {
                 System.out.print("Enter role (USER or ADMIN): ");
                 String role = scanner.nextLine().toUpperCase();
                 try {
-                    String signupPayload = String.format("{\"username\":\"%s\", \"email\":\"%s\", \"password\":\"%s\", \"role\":\"%s\"}",
-                            username, email, password, role);
+                    String signupPayload = String.format("{\"username\":\"%s\", \"email\":\"%s\", \"password\":\"%s\", \"role\":\"%s\"}",username, email, password, role);
                     URL url = new URL("http://localhost:8080/api/auth/signup");
                     HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
                     httpURLConnection.setRequestMethod("POST");
@@ -42,15 +41,15 @@ public class NewsApplication {
                         outputStream.write(signupPayload.getBytes());
                     }
                     int responseCode = httpURLConnection.getResponseCode();
-                    System.out.println("Response Code: " + responseCode);
-                    Scanner responseScanner ;
-                    if (responseCode >= 200 && responseCode < 300) {
-                        responseScanner = new Scanner(httpURLConnection.getInputStream());
+                    if (responseCode == 200) {
+                        System.out.println("Signup successful!");
                     } else {
-                        responseScanner = new Scanner(httpURLConnection.getErrorStream());
-                    }
-                    while (responseScanner.hasNextLine()) {
-                        System.out.println(responseScanner.nextLine());
+                        Scanner responseScanner = new Scanner(httpURLConnection.getErrorStream());
+                        StringBuilder responseBody = new StringBuilder();
+                        while (responseScanner.hasNextLine()) {
+                            responseBody.append(responseScanner.nextLine());
+                        }
+                        System.out.println("Signup failed: " + responseBody);
                     }
                     httpURLConnection.disconnect();
                 } catch (Exception e) {
@@ -68,8 +67,8 @@ public class NewsApplication {
                 String authPassword = scanner.nextLine();
 
                 try {
-                    String loginPayload = String.format("{\"email\":\"%s\", \"password\":\"%s\"}"
-                            ,email, password);
+                    String loginPayload = String.format("{\"email\":\"%s\", \"password\":\"%s\"}", email, password);
+
                     URL url = new URL("http://localhost:8080/api/auth/login");
                     HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
                     httpURLConnection.setRequestMethod("POST");
@@ -80,12 +79,13 @@ public class NewsApplication {
                     try (OutputStream outputStream = httpURLConnection.getOutputStream()) {
                         outputStream.write(loginPayload.getBytes());
                     }
-                    int responseCode = httpURLConnection.getResponseCode();
-                    System.out.println("Response Code: " + responseCode);
 
-                    Scanner responseScanner = new Scanner(httpURLConnection.getInputStream());
-                    while (responseScanner.hasNextLine()) {
-                        System.out.println(responseScanner.nextLine());
+                    int responseCode = httpURLConnection.getResponseCode();
+
+                    if (responseCode == 200) {
+                        System.out.println("Login successful!");
+                    } else {
+                        System.out.println("Login failed!");
                     }
                     httpURLConnection.disconnect();
 
